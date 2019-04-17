@@ -3,6 +3,8 @@ name = "lsp_msg_derive"
 version = "0.1.0"
 authors = ["Justin Simerly <justinsimerly1992@gmail.com>"]
 edition = "2018"
+description = "Proc macros for lsp_msg"
+license = "MIT"
 
 [lib]
 proc-macro = true
