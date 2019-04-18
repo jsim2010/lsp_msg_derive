@@ -21,10 +21,10 @@ syn = { version = "0.15.30", features = ["full"] }
 
 [package.metadata.commands]
 preeval = """
-(cargo readme -V || cargo install cargo-readme) \
-&& (cargo clippy -V || rustup component add clippy) \
-&& (cargo fmt --version || rustup component add rustfmt) \
-&& cargo readme > r\
+(cargo-readme -V || cargo install cargo-readme) \
+&& (cargo-clippy -V || rustup component add clippy) \
+&& (cargo-fmt --version || rustup component add rustfmt) \
+&& cargo-readme readme > r\
 """
 # Evaluates source code for issues.
 
@@ -34,7 +34,7 @@ preeval = """
 # -A clippy::implicit-return: This goes against rust convention and would require return calls in inconvenient places (e.g. closures).
 eval = """
 set CLIPPY_DISABLE_DOCS_LINKS=1\
-&& cargo clippy -- \
+&& cargo-clippy clippy -- \
     -F warnings \
     -F rust-2018-idioms \
     -F future-incompatible \
@@ -79,12 +79,12 @@ set CLIPPY_DISABLE_DOCS_LINKS=1\
     -D unused-qualifications \
     -A missing-docs \
     -A clippy::implicit-return \
-&& cargo fmt -- --check \
+&& cargo-fmt -- --check \
 && fc r README.md \
 && cargo test --verbose --all-features\
 """
 posteval = "if exist r rm r"
 
-prefix = "cargo readme -V || cargo install cargo-readme"
+prefix = "cargo-readme -V || cargo install cargo-readme"
 # Fixes all issues that can be done automatically.
-fix = "cargo fmt && cargo readme > README.md"
+fix = "cargo-fmt && cargo-readme readme > README.md"
