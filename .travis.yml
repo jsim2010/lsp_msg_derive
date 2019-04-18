@@ -1,3 +1,4 @@
+language: rust
 os: windows
 cache: cargo
 install:
