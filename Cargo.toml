@@ -22,6 +22,7 @@ syn = { version = "0.15.30", features = ["full"] }
 [package.metadata.commands]
 preeval = """
 (cargo readme -V || cargo install cargo-readme) \
+&& (cargo clippy -V || cargo install clippy) \
 && cargo readme > r\
 """
 # Evaluates source code for issues.
@@ -83,5 +84,6 @@ set CLIPPY_DISABLE_DOCS_LINKS=1\
 """
 posteval = "if exist r rm r"
 
+prefix = "cargo readme -V || cargo install cargo-readme"
 # Fixes all issues that can be done automatically.
 fix = "cargo fmt && cargo readme > README.md"
