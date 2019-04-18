@@ -20,7 +20,10 @@ quote = "0.6.12"
 syn = { version = "0.15.30", features = ["full"] }
 
 [package.metadata.commands]
-preeval = "cargo readme > r"
+preeval = """
+(cargo readme -V || cargo install cargo-readme) \
+&& cargo readme > r\
+"""
 # Evaluates source code for issues.
 
 # Clippy command forbids all rustc and clippy lints except the following:
@@ -76,7 +79,7 @@ set CLIPPY_DISABLE_DOCS_LINKS=1\
     -A clippy::implicit-return \
 && cargo fmt -- --check \
 && fc r README.md \
-&& cargo test --verbose --all-features \
+&& cargo test --verbose --all-features\
 """
 posteval = "if exist r rm r"
 
