@@ -23,6 +23,7 @@ syn = { version = "0.15.30", features = ["full"] }
 preeval = """
 (cargo readme -V || cargo install cargo-readme) \
 && (cargo clippy -V || rustup component add clippy) \
+&& (cargo fmt --version || rustup component add fmt) \
 && cargo readme > r\
 """
 # Evaluates source code for issues.
