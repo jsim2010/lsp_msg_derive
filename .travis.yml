@@ -2,5 +2,5 @@ language: rust
 os: windows
 cache: cargo
 install:
-  - cargo install cargo-cmd
+  - dir $HOME/.cargo && dir $HOME/.cargo/bin && (cargo cmd -V || cargo install cargo-cmd)
 script: cargo cmd eval
