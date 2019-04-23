@@ -19,6 +19,10 @@ proc-macro2 = "0.4.27"
 quote = "0.6.12"
 syn = { version = "0.15.30", features = ["full"] }
 
+[dev-dependencies]
+lsp_msg_internal = "0.1.0"
+serde = { version = "1.0.90", features = ["derive"] }
+
 [package.metadata.commands]
 preeval = """
 (cargo-readme -V || cargo install cargo-readme) \
@@ -32,13 +36,12 @@ preeval = """
 # -D unused-qualifications: #[derive(Default)] adds an allow.
 # -A missing-docs: Unknown errors found due to missing documentation for a module and a static; this may be due to being a proc-macro?
 # -A clippy::implicit-return: This goes against rust convention and would require return calls in inconvenient places (e.g. closures).
+# -A clippy::multiple-crate-versions: Invalid error due to lsp_msg_internal including lsp_msg_derive.
 eval = """
 set CLIPPY_DISABLE_DOCS_LINKS=1\
-&& cargo-clippy clippy -- \
+&& cargo-clippy clippy --verbose -- \
     -F warnings \
-    -F rust-2018-idioms \
     -F future-incompatible \
-    -F unused \
     -F macro-use-extern-crate \
     -F missing-copy-implementations \
     -F missing-debug-implementations \
@@ -46,13 +49,31 @@ set CLIPPY_DISABLE_DOCS_LINKS=1\
     -F trivial-casts \
     -F trivial-numeric-casts \
     -F unreachable-pub \
+    -F unused-imports \
     -F unused-import-braces \
     -F unused-lifetimes \
     -F unused-results \
+    -F unused-variables \
+    -F unused-assignments \
+    -F dead-code \
+    -F unused-mut \
+    -F unreachable-code \
+    -F unreachable-patterns \
+    -F unused-must-use \
+    -F unused-unsafe \
+    -F path-statements \
+    -F unused-macros \
+    -F unused-allocation \
+    -F unused-doc-comments \
+    -F unused-extern-crates \
+    -F unused-features \
+    -F unused-labels \
+    -F unused-parens \
     -F clippy::all \
     -F clippy::pedantic \
     -F clippy::nursery \
-    -F clippy::cargo \
+    -F clippy::cargo-common-metadata \
+    -F clippy::wildcard-dependencies \
     -F clippy::clone-on-ref-ptr \
     -F clippy::dbg-macro \
     -F clippy::decimal-literal-representation \
@@ -76,9 +97,12 @@ set CLIPPY_DISABLE_DOCS_LINKS=1\
     -F clippy::use-debug \
     -F clippy::wildcard-enum-match-arm \
     -F clippy::wrong-pub-self-convention \
+    -D rust-2018-idioms \
+    -D unused-attributes \
     -D unused-qualifications \
     -A missing-docs \
     -A clippy::implicit-return \
+    -A clippy::multiple-crate-versions \
 && cargo-fmt -- --check \
 && fc r README.md \
 && cargo test --verbose --all-features\

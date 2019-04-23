@@ -1,6 +1,6 @@
 # lsp_msg_derive
 
-Implements macros for `lsp_msg` crate.
+Implements attribute macros for `lsp_msg` crate.
 
 These macros remove much of the repetition from the LSP definitions.
 
