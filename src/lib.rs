@@ -3,128 +3,140 @@
 //! These macros remove much of the repetition from the LSP definitions.
 extern crate proc_macro;
 
-use proc_macro::TokenStream;
+use proc_macro::{TokenStream, TokenTree};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
-use spec::spec;
-use std::ops::Index;
 use syn::{
-    parse_macro_input, AttributeArgs, Fields, Ident, Item, ItemStruct, Lit, Meta, NestedMeta, Type,
+    parse_macro_input, Fields, Ident, Item, ItemStruct, Lit, Meta, MetaList, NestedMeta, Type,
 };
 
-/// Generates **LSP objects** from structs.
-#[spec(
-    name = "serde",
-    shall = "add the `Deserialize` and `Serialize` traits.",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object]
-        struct LspObj {}
-    }
-)]
-#[spec(
-    name = "allow_missing",
-    cond = "receives `allow_missing`, when deserializing the **LSP object**, any missing field shall be set to its respective default value",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object(allow_missing)]
-        struct LspObj {}
-    }
-)]
-#[spec(
-    name = "dynamic_registration",
-    cond = "recieves `dynamic_registration = \"..\"`, a `dynamic_registration` field with type `bool` and documentation ``Supports dynamic registration of the {..}.`` is added to the **LSP object**",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object(dynamic_registration = "test")]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            dynamic_registration: bool::default(),
-        };
-    }
-)]
-#[spec(
-    name = "link_support",
-    cond = "receives `link_support = \"..\"`, a `link_support` field with type `bool` and documentation ``Supports additional metadata in the form of {..} links.`` is added to the **LSP object**",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object(link_support = "test")]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            link_support: bool::default(),
-        };
-    }
-)]
-#[spec(
-    name = "trigger_characters",
-    cond = "recieves `trigger_characters = \"..\"`, a `trigger_characters` field with type `Vec<String>` and documentation ``Characters that trigger {..} automatically.`` is added to the **LSP object**",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object(trigger_characters = "test")]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            trigger_characters: vec![String::default()],
-        };
-    }
-)]
-#[spec(
-    name = "resolve_provider",
-    cond = "receives `resolve_provider = \"..\"`, a `resolve_provider` field with type `bool` and documentation ``Provides support to resolve additional information for a {..} item.`` is added to the **LSP object",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use serde::{Deserialize, Serialize};
-
-        #[lsp_object(resolve_provider = "test")]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            resolve_provider: bool::default(),
-        };
-    }
-)]
-#[spec(
-    name = "static_registration",
-    cond = "receives `static_registration`, an `id` field with type `Elective<String>` and documentation ``The id used to register the request.`` is added to the **LSP object**",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use lsp_msg_internal::Elective;
-        use serde::{Deserialize, Serialize};
-
-        //#[lsp_object(static_registration)]
-        //struct LspObj {}
-        //let lsp_obj = LspObj {
-        //    id: Elective::Present(String::default()),
-        //};
-    }
-)]
-#[spec(
-    name = "markup_kind_list",
-    cond = "receives `markup_kind_list = \"..\"`, a `{..}_format` field with type `Vec<MarkupKind>` and documentation ``The supported `MarkupKind`s for the `{..}` property.\\n\\nThe order describes the preferred format.`` is added to the **LSP object**",
-    cert {
-        use lsp_msg_derive::lsp_object;
-        use lsp_msg_internal::MarkupKind;
-        use serde::{Deserialize, Serialize};
-
-        //#[lsp_object(markup_kind_list = "test")]
-        //struct LspObj {}
-        //let lsp_obj = LspObj {
-        //    test_format: vec![MarkupKind::Plaintext],
-        //};
-    }
-)]
+/// An attribute-like macro to define LSP objects from structs.
+///
+/// # Examples
+/// Base example that specifies struct is an LSP object.
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object]
+/// struct LspObj {
+/// }
+/// ```
+///
+/// Allows deserializer to set missing fields to their respective default value.
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(allow_missing)]
+/// struct LspObj {
+/// }
+/// ```
+///
+/// Adds `dynamic_registration` field to LSP object.
+///
+/// Literal value is added to the documentation string "Supports dynamic registration of the {}.".
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(dynamic_registration = "test")]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     dynamic_registration: bool::default(),
+/// };
+/// ```
+///
+/// Adds `link_support` field to LSP object.
+///
+/// Literal value is added to the documentation string "Supports additional metadata in the form of
+/// {} links.".
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(link_support = "test")]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     link_support: bool::default(),
+/// };
+/// ```
+///
+/// Adds `trigger_characters` field to LSP object.
+///
+/// Literal value is added to the documentation string "Characters that trigger {} automatically.".
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(trigger_characters = "test")]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     trigger_characters: vec![String::default()],
+/// };
+/// ```
+///
+/// Adds `resolve_provider` field to LSP object.
+///
+/// Literal value is added to the documentation string "Provides support to resolve additional information for a {} item.".
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(resolve_provider = "test")]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     resolve_provider: bool::default(),
+/// };
+/// ```
+///
+/// Adds id field to LSP object.
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use lsp_msg_internal::Elective;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(static_registration)]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     id: Elective::Present(String::new()),
+/// };
+/// ```
+///
+/// Adds a field to hold a `Vec<MarkupKind>`.
+///
+/// Literal value is added to the field name "{}_format" and the documentation string "The
+/// supported `MarkupKind`s for the `{}` property.\n\nThe order describes the preferred format.".
+/// ```
+/// use lsp_msg_derive::lsp_object;
+/// use lsp_msg_internal::MarkupKind;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[lsp_object(markup_kind_list = "test")]
+/// struct LspObj {
+/// }
+///
+/// let lsp_obj = LspObj {
+///     test_format: Vec::new(),
+/// };
+/// ```
 #[proc_macro_attribute]
 #[inline]
-pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as AttributeArgs);
+pub fn lsp_object(metas: TokenStream, item: TokenStream) -> TokenStream {
+    // Convert `metas` to `TokenStream2` so that it can be used within `quote`.
+    let metas2 = TokenStream2::from(metas);
+    let meta_list = TokenStream::from(quote! {lsp_object(#metas2)});
+    let parsed_meta_list = parse_macro_input!(meta_list as MetaList);
     let item = parse_macro_input!(item as ItemStruct);
 
     let name = item.ident;
@@ -143,11 +155,10 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
     let mut markup_kind_list_field = quote! {};
     let mut trigger_characters_field = quote! {};
     let mut resolve_provider_field = quote! {};
-    let mut value_set_field = quote! {};
 
     let mut fields: Vec<TokenStream2> = Vec::new();
 
-    for metaitem in args {
+    for metaitem in parsed_meta_list.nested {
         if let NestedMeta::Meta(meta) = metaitem {
             match meta {
                 Meta::Word(word) => match word.to_string().as_str() {
@@ -227,39 +238,11 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
                             };
                         }
                     }
-                    value => {
-                        panic!("Meta NameValue '{}' is not supported.", value);
-                    }
+                    _ => {}
                 },
-                Meta::List(list) => match list.ident.to_string().as_str() {
-                    "value_set" => {
-                        let len = list.nested.len();
-                        let mut valid_doc = String::new();
-
-                        if len == 2 {
-                            if let NestedMeta::Literal(Lit::Str(valid)) = &list.nested.index(1) {
-                                valid_doc = format!(
-                                    " Else, only supports values where `{}`.",
-                                    valid.value()
-                                );
-                            }
-                        }
-
-                        if len == 1 || len == 2 {
-                            if let NestedMeta::Literal(Lit::Str(kind)) = &list.nested.index(0) {
-                                let kind_ident = Ident::new(&kind.value(), Span::call_site());
-                                let doc = format!("The supported `{0}` values.\n\nIf `Elective::is_absent()` is false, unknown values fall back to `{0}::default()`.{1}", kind.value(), valid_doc);
-                                value_set_field = quote! {
-                                    #[doc = #doc]
-                                    value_set: Elective<Vec<#kind_ident>>,
-                                };
-                            }
-                        }
-                    }
-                    value => {
-                        panic!("Meta List '{}' is not supported.", value);
-                    }
-                },
+                Meta::List(_) => {
+                    panic!("Meta List is not supported.");
+                }
             }
         }
     }
@@ -288,7 +271,7 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let output = quote! {
-        #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
+        #[derive(Debug, Default, Deserialize, Serialize)]
         #[serde(rename_all = "camelCase")]
         #allow_missing_fields_attr
         #(#attrs)*
@@ -299,7 +282,6 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
             #markup_kind_list_field
             #trigger_characters_field
             #resolve_provider_field
-            #value_set_field
             #(#fields),*
         }
     };
@@ -307,53 +289,22 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(output)
 }
 
-/// Defines LSP kinds from enums.
-#[spec(
-    name = "serde",
-    shall = "add the `Deserialize` and `Serialize` traits."
-)]
+/// An attribute-like macro to define LSP kinds from enums.
 #[proc_macro_attribute]
 #[inline]
-pub fn lsp_kind(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as AttributeArgs);
-    let default_derives = quote! {
-        Debug, PartialEq
-    };
-    let mut derives = quote! {
-        Deserialize, Serialize
-    };
-    let mut serde_attrs = quote! {
-        #[serde(untagged)]
+pub fn lsp_kind(metaitem: TokenStream, item: TokenStream) -> TokenStream {
+    let mut kind_attrs = quote! {
+        #[derive(Debug, Deserialize, Serialize)]
+        #[serde(rename_all = "camelCase")]
     };
 
-    for arg in args {
-        if let NestedMeta::Meta(meta) = arg {
-            if let Meta::NameValue(name_value) = meta {
-                if name_value.ident.to_string().as_str() == "type" {
-                    if let Lit::Str(literal) = name_value.lit {
-                        match literal.value().as_str() {
-                            "string" => {
-                                serde_attrs = quote! {
-                                    #[serde(rename_all = "camelCase")]
-                                };
-                            }
-                            "number" => {
-                                derives = quote! {
-                                    Deserialize_repr, Serialize_repr
-                                };
-                                serde_attrs = quote! {
-                                    #[repr(u8)]
-                                };
-                            }
-                            "language_id" => {
-                                serde_attrs = quote! {
-                                    #[serde(rename_all = "kebab-case")]
-                                };
-                            }
-                            _ => {}
-                        }
-                    }
-                }
+    for token in metaitem {
+        if let TokenTree::Ident(ident) = token {
+            if ident.to_string().as_str() == "number" {
+                kind_attrs = quote! {
+                    #[derive(Debug, Deserialize_repr, Serialize_repr)]
+                    #[repr(u8)]
+                };
             }
         }
     }
@@ -365,8 +316,7 @@ pub fn lsp_kind(args: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let output = quote! {
-        #[derive(#default_derives, #derives)]
-        #serde_attrs
+        #kind_attrs
         #input
     };
 

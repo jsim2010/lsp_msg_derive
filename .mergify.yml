@@ -16,11 +16,3 @@ pull_request_rules:
     actions:
       merge:
         method: squash
-  - name: upgrade master to PR
-    conditions:
-      - label=bump
-      - status-success=Travis CI - Pull Request
-      - base=master
-    actions:
-      merge:
-        method: squash
