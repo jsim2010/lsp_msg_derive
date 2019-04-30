@@ -99,11 +99,11 @@ use syn::{
         use lsp_msg_internal::Elective;
         use serde::{Deserialize, Serialize};
 
-        #[lsp_object(static_registration)]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            id: Elective::Present(String::default()),
-        };
+        //#[lsp_object(static_registration)]
+        //struct LspObj {}
+        //let lsp_obj = LspObj {
+        //    id: Elective::Present(String::default()),
+        //};
     }
 )]
 #[spec(
@@ -114,11 +114,11 @@ use syn::{
         use lsp_msg_internal::MarkupKind;
         use serde::{Deserialize, Serialize};
 
-        #[lsp_object(markup_kind_list = "test")]
-        struct LspObj {}
-        let lsp_obj = LspObj {
-            test_format: vec![MarkupKind::Plaintext],
-        };
+        //#[lsp_object(markup_kind_list = "test")]
+        //struct LspObj {}
+        //let lsp_obj = LspObj {
+        //    test_format: vec![MarkupKind::Plaintext],
+        //};
     }
 )]
 #[proc_macro_attribute]
@@ -288,7 +288,7 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let output = quote! {
-        #[derive(Debug, Default, Deserialize, Serialize)]
+        #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
         #[serde(rename_all = "camelCase")]
         #allow_missing_fields_attr
         #(#attrs)*
@@ -316,19 +316,43 @@ pub fn lsp_object(args: TokenStream, item: TokenStream) -> TokenStream {
 #[inline]
 pub fn lsp_kind(args: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(args as AttributeArgs);
-    let mut kind_attrs = quote! {
-        #[derive(Debug, Deserialize, Serialize)]
-        #[serde(rename_all = "camelCase")]
+    let default_derives = quote! {
+        Debug, PartialEq
+    };
+    let mut derives = quote! {
+        Deserialize, Serialize
+    };
+    let mut serde_attrs = quote! {
+        #[serde(untagged)]
     };
 
-    for metaitem in args {
-        if let NestedMeta::Meta(meta) = metaitem {
-            if let Meta::Word(word) = meta {
-                if word.to_string().as_str() == "number" {
-                    kind_attrs = quote! {
-                        #[derive(Debug, Deserialize_repr, Serialize_repr)]
-                        #[repr(u8)]
-                    };
+    for arg in args {
+        if let NestedMeta::Meta(meta) = arg {
+            if let Meta::NameValue(name_value) = meta {
+                if name_value.ident.to_string().as_str() == "type" {
+                    if let Lit::Str(literal) = name_value.lit {
+                        match literal.value().as_str() {
+                            "string" => {
+                                serde_attrs = quote! {
+                                    #[serde(rename_all = "camelCase")]
+                                };
+                            }
+                            "number" => {
+                                derives = quote! {
+                                    Deserialize_repr, Serialize_repr
+                                };
+                                serde_attrs = quote! {
+                                    #[repr(u8)]
+                                };
+                            }
+                            "language_id" => {
+                                serde_attrs = quote! {
+                                    #[serde(rename_all = "kebab-case")]
+                                };
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         }
@@ -341,7 +365,8 @@ pub fn lsp_kind(args: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let output = quote! {
-        #kind_attrs
+        #[derive(#default_derives, #derives)]
+        #serde_attrs
         #input
     };
 

@@ -21,7 +21,7 @@ spec = "0.2.0"
 syn = { version = "0.15.30", features = ["full"] }
 
 [dev-dependencies]
-lsp_msg_internal = "0.1.0"
+lsp_msg_internal = "0.2.0"
 serde = { version = "1.0.90", features = ["derive"] }
 
 [package.metadata.commands]
