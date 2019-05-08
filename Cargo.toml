@@ -17,12 +17,12 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "0.4.27"
 quote = "0.6.12"
-spec = "0.2.0"
 syn = { version = "0.15.30", features = ["full"] }
 
 [dev-dependencies]
-lsp_msg_internal = "0.2.0"
+lsp_msg_internal = "0.3.0"
 serde = { version = "1.0.90", features = ["derive"] }
+serde_test = "1.0.90"
 
 [package.metadata.commands]
 preeval = """
